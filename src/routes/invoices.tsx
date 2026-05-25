@@ -12,7 +12,7 @@ export const Route = createFileRoute("/invoices")({
 
 type Invoice = {
   id: string; invoice_no: number; total: number; subtotal: number; tax: number; discount: number;
-  payment_type: string; status: string; created_at: string;
+  payment_type: string; status: string; created_at: string; type: string; parent_invoice_id: string | null;
   customers: { name: string } | null;
 };
 
