@@ -86,19 +86,27 @@ function InvoicesPage() {
             <th className="text-right font-medium px-4 py-3">التاريخ</th>
             <th className="text-right font-medium px-4 py-3"></th>
           </tr></thead>
-          <tbody>{rows.map((i) => (
-            <tr key={i.id} className="border-t border-border hover:bg-muted/30">
-              <td className="px-4 py-3 font-bold text-primary">#{i.invoice_no}</td>
+          <tbody>{rows.map((i) => {
+            const isReturn = i.type === "return";
+            const isRefunded = i.status === "refunded";
+            return (
+            <tr key={i.id} className={`border-t border-border hover:bg-muted/30 ${isReturn ? "bg-destructive/5" : ""}`}>
+              <td className="px-4 py-3 font-bold text-primary">#{i.invoice_no}{isReturn && <span className="ms-1 text-[10px] text-destructive">(مرتجع)</span>}</td>
               <td className="px-4 py-3">{i.customers?.name ?? "عميل نقدي"}</td>
-              <td className="px-4 py-3 font-bold">{Number(i.total).toLocaleString()} ر.س</td>
+              <td className={`px-4 py-3 font-bold ${isReturn ? "text-destructive" : ""}`}>{Number(i.total).toLocaleString()} ر.س</td>
               <td className="px-4 py-3"><span className="rounded-md bg-accent px-2 py-0.5 text-xs">{PAY_LABEL[i.payment_type] ?? i.payment_type}</span></td>
-              <td className="px-4 py-3"><span className={`rounded-md px-2 py-0.5 text-xs font-semibold ${i.status === "paid" ? "bg-success/15 text-success" : "bg-warning/20 text-warning"}`}>{i.status === "paid" ? "مدفوعة" : "غير مدفوعة"}</span></td>
+              <td className="px-4 py-3"><span className={`rounded-md px-2 py-0.5 text-xs font-semibold ${isRefunded ? "bg-destructive/15 text-destructive" : i.status === "paid" ? "bg-success/15 text-success" : "bg-warning/20 text-warning"}`}>{isRefunded ? "مرتجعة" : i.status === "paid" ? "مدفوعة" : "غير مدفوعة"}</span></td>
               <td className="px-4 py-3 text-muted-foreground text-xs">{new Date(i.created_at).toLocaleString("ar-SA")}</td>
               <td className="px-4 py-3 text-left">
-                <button onClick={() => setDetail(i.id)} className="rounded-lg p-2 hover:bg-accent"><Eye className="h-4 w-4" /></button>
+                <div className="inline-flex gap-1">
+                  <button onClick={() => setDetail(i.id)} title="عرض" className="rounded-lg p-2 hover:bg-accent"><Eye className="h-4 w-4" /></button>
+                  {!isReturn && !isRefunded && (
+                    <button onClick={() => handleReturn(i.id, i.invoice_no)} title="إرجاع" className="rounded-lg p-2 hover:bg-destructive/10 text-destructive"><RotateCcw className="h-4 w-4" /></button>
+                  )}
+                </div>
               </td>
             </tr>
-          ))}</tbody>
+          );})}</tbody>
         </table></div>}
       </div>
 
