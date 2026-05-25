@@ -127,7 +127,20 @@ function POS() {
               autoFocus
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="مسح الباركود أو بحث بالاسم / الفئة..."
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && q.trim()) {
+                  const exact = products.find((p) => p.barcode === q.trim());
+                  if (exact) {
+                    if (exact.stock <= 0) { toast.error("المنتج غير متوفر بالمخزون"); return; }
+                    add(exact); setQ("");
+                  } else if (filtered.length === 1) {
+                    add(filtered[0]); setQ("");
+                  } else if (filtered.length === 0) {
+                    toast.error("لم يتم العثور على المنتج / الباركود");
+                  }
+                }
+              }}
+              placeholder="مسح الباركود (Enter للإضافة) أو بحث بالاسم..."
               className="w-full rounded-xl border border-input bg-muted/40 py-3 pr-10 pl-3 text-sm outline-none focus:border-primary focus:bg-background transition"
             />
           </div>
