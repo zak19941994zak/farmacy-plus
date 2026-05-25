@@ -443,6 +443,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_invoice: {
+        Args: {
+          _customer_id: string
+          _discount: number
+          _items: Json
+          _notes: string
+          _payment_type: string
+          _tax: number
+        }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
