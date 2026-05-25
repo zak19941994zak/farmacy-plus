@@ -49,6 +49,16 @@ function InvoicesPage() {
   const todayTotal = invoices.filter((i) => new Date(i.created_at).toDateString() === new Date().toDateString()).reduce((s, i) => s + Number(i.total), 0);
   const monthTotal = invoices.filter((i) => new Date(i.created_at).getMonth() === new Date().getMonth()).reduce((s, i) => s + Number(i.total), 0);
 
+  const handleReturn = async (id: string, no: number) => {
+    if (!confirm(`هل تريد إرجاع الفاتورة #${no}؟ سيتم إعادة المخزون.`)) return;
+    const reason = prompt("سبب الإرجاع (اختياري):") ?? null;
+    const { error } = await (supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>)("process_return", { _invoice_id: id, _reason: reason });
+    if (error) { toast.error(error.message); return; }
+    toast.success("تم إرجاع الفاتورة وإعادة المخزون");
+    qc.invalidateQueries({ queryKey: ["invoices"] });
+  };
+
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
