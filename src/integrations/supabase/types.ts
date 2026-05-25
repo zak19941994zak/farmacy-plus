@@ -20,6 +20,7 @@ export type Database = {
           created_at: string
           details: Json | null
           entity: string | null
+          entity_id: string | null
           id: string
           user_id: string | null
         }
@@ -28,6 +29,7 @@ export type Database = {
           created_at?: string
           details?: Json | null
           entity?: string | null
+          entity_id?: string | null
           id?: string
           user_id?: string | null
         }
@@ -36,6 +38,7 @@ export type Database = {
           created_at?: string
           details?: Json | null
           entity?: string | null
+          entity_id?: string | null
           id?: string
           user_id?: string | null
         }
