@@ -176,11 +176,13 @@ export type Database = {
           id: string
           invoice_no: number
           notes: string | null
+          parent_invoice_id: string | null
           payment_type: string
           status: string
           subtotal: number
           tax: number
           total: number
+          type: string
         }
         Insert: {
           cashier_id?: string | null
@@ -190,11 +192,13 @@ export type Database = {
           id?: string
           invoice_no?: number
           notes?: string | null
+          parent_invoice_id?: string | null
           payment_type?: string
           status?: string
           subtotal?: number
           tax?: number
           total?: number
+          type?: string
         }
         Update: {
           cashier_id?: string | null
@@ -204,11 +208,13 @@ export type Database = {
           id?: string
           invoice_no?: number
           notes?: string | null
+          parent_invoice_id?: string | null
           payment_type?: string
           status?: string
           subtotal?: number
           tax?: number
           total?: number
+          type?: string
         }
         Relationships: [
           {
@@ -216,6 +222,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_parent_invoice_id_fkey"
+            columns: ["parent_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
             referencedColumns: ["id"]
           },
         ]
@@ -438,6 +451,10 @@ export type Database = {
         Returns: boolean
       }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
+      process_return: {
+        Args: { _invoice_id: string; _reason?: string }
+        Returns: string
+      }
     }
     Enums: {
       app_role: "owner" | "admin" | "accountant" | "cashier" | "warehouse"

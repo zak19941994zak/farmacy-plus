@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Eye, Loader2, Printer, Receipt, Search } from "lucide-react";
+import { Eye, Loader2, Printer, Receipt, RotateCcw, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/invoices")({
   head: () => ({ meta: [{ title: "الفواتير — الصيدلية البيطرية والزراعية" }] }),
@@ -11,7 +12,7 @@ export const Route = createFileRoute("/invoices")({
 
 type Invoice = {
   id: string; invoice_no: number; total: number; subtotal: number; tax: number; discount: number;
-  payment_type: string; status: string; created_at: string;
+  payment_type: string; status: string; created_at: string; type: string; parent_invoice_id: string | null;
   customers: { name: string } | null;
 };
 
@@ -27,7 +28,7 @@ function InvoicesPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("invoices")
-        .select("id, invoice_no, total, subtotal, tax, discount, payment_type, status, created_at, customers(name)")
+        .select("id, invoice_no, total, subtotal, tax, discount, payment_type, status, created_at, type, parent_invoice_id, customers(name)")
         .order("created_at", { ascending: false })
         .limit(200);
       if (error) throw error;
@@ -47,6 +48,16 @@ function InvoicesPage() {
   );
   const todayTotal = invoices.filter((i) => new Date(i.created_at).toDateString() === new Date().toDateString()).reduce((s, i) => s + Number(i.total), 0);
   const monthTotal = invoices.filter((i) => new Date(i.created_at).getMonth() === new Date().getMonth()).reduce((s, i) => s + Number(i.total), 0);
+
+  const handleReturn = async (id: string, no: number) => {
+    if (!confirm(`هل تريد إرجاع الفاتورة #${no}؟ سيتم إعادة المخزون.`)) return;
+    const reason = prompt("سبب الإرجاع (اختياري):") ?? null;
+    const { error } = await (supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>)("process_return", { _invoice_id: id, _reason: reason });
+    if (error) { toast.error(error.message); return; }
+    toast.success("تم إرجاع الفاتورة وإعادة المخزون");
+    qc.invalidateQueries({ queryKey: ["invoices"] });
+  };
+
 
   return (
     <div className="space-y-4">
@@ -85,19 +96,27 @@ function InvoicesPage() {
             <th className="text-right font-medium px-4 py-3">التاريخ</th>
             <th className="text-right font-medium px-4 py-3"></th>
           </tr></thead>
-          <tbody>{rows.map((i) => (
-            <tr key={i.id} className="border-t border-border hover:bg-muted/30">
-              <td className="px-4 py-3 font-bold text-primary">#{i.invoice_no}</td>
+          <tbody>{rows.map((i) => {
+            const isReturn = i.type === "return";
+            const isRefunded = i.status === "refunded";
+            return (
+            <tr key={i.id} className={`border-t border-border hover:bg-muted/30 ${isReturn ? "bg-destructive/5" : ""}`}>
+              <td className="px-4 py-3 font-bold text-primary">#{i.invoice_no}{isReturn && <span className="ms-1 text-[10px] text-destructive">(مرتجع)</span>}</td>
               <td className="px-4 py-3">{i.customers?.name ?? "عميل نقدي"}</td>
-              <td className="px-4 py-3 font-bold">{Number(i.total).toLocaleString()} ر.س</td>
+              <td className={`px-4 py-3 font-bold ${isReturn ? "text-destructive" : ""}`}>{Number(i.total).toLocaleString()} ر.س</td>
               <td className="px-4 py-3"><span className="rounded-md bg-accent px-2 py-0.5 text-xs">{PAY_LABEL[i.payment_type] ?? i.payment_type}</span></td>
-              <td className="px-4 py-3"><span className={`rounded-md px-2 py-0.5 text-xs font-semibold ${i.status === "paid" ? "bg-success/15 text-success" : "bg-warning/20 text-warning"}`}>{i.status === "paid" ? "مدفوعة" : "غير مدفوعة"}</span></td>
+              <td className="px-4 py-3"><span className={`rounded-md px-2 py-0.5 text-xs font-semibold ${isRefunded ? "bg-destructive/15 text-destructive" : i.status === "paid" ? "bg-success/15 text-success" : "bg-warning/20 text-warning"}`}>{isRefunded ? "مرتجعة" : i.status === "paid" ? "مدفوعة" : "غير مدفوعة"}</span></td>
               <td className="px-4 py-3 text-muted-foreground text-xs">{new Date(i.created_at).toLocaleString("ar-SA")}</td>
               <td className="px-4 py-3 text-left">
-                <button onClick={() => setDetail(i.id)} className="rounded-lg p-2 hover:bg-accent"><Eye className="h-4 w-4" /></button>
+                <div className="inline-flex gap-1">
+                  <button onClick={() => setDetail(i.id)} title="عرض" className="rounded-lg p-2 hover:bg-accent"><Eye className="h-4 w-4" /></button>
+                  {!isReturn && !isRefunded && (
+                    <button onClick={() => handleReturn(i.id, i.invoice_no)} title="إرجاع" className="rounded-lg p-2 hover:bg-destructive/10 text-destructive"><RotateCcw className="h-4 w-4" /></button>
+                  )}
+                </div>
               </td>
             </tr>
-          ))}</tbody>
+          );})}</tbody>
         </table></div>}
       </div>
 
